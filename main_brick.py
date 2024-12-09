@@ -2,6 +2,7 @@ from mod_construct_brick import *
 from mod_sample import *
 from mod_construct_supercell import *
 from mod_write import *
+from mod_write_cshff import *
 from mod_check import *
 from parameters import *
 from mod_make_graphs import *
@@ -36,6 +37,9 @@ except NameError: check = False
 try: write_lammps
 except NameError: write_lammps = True
 
+try: write_lammps_cshff	
+except NameError: write_lammps_cshff = True
+
 try: write_lammps_erica
 except NameError: write_lammps_erica = True
 
@@ -46,7 +50,7 @@ try: write_siesta
 except NameError: write_siesta = False
 
 try: read_structure
-except NameError: read_structure = False
+except NameError: read_structure = True
 
 try: surface_separation
 except NameError: surface_separation = False
@@ -137,12 +141,17 @@ if create:
 			water_in_crystal = fill_water(crystal, N_water = N_water)
 
 			crystal_rs, water_in_crystal_rs =  reshape_crystal(crystal, water_in_crystal, shape)
-			entries_crystal, entries_bonds, crystal_dict, water_dict = get_full_coordinates( crystal_rs, water_in_crystal_rs, shape, pieces )
+			entries_crystal, entries_bonds, entries_bonds_cshff, crystal_dict, water_dict = get_full_coordinates( crystal_rs, water_in_crystal_rs, shape, pieces )
 
-			entries_angle = get_angles(crystal_dict, water_dict, shape)
+			entries_angle, entries_angle_cshff = get_angles(crystal_dict, water_dict, shape)
 
 			# Water molecule overlap
-			entries_crystal, N_not_ok, itry = check_move_water_hydrogens(entries_crystal)
+			if write_lammps_cshff == True:
+				print("CSH_FF")
+				entries_crystal, N_not_ok, itry = check_move_water_hydrogens(entries_crystal, "SPC")
+			else: # write_lammps == True or write_lammps_erica == True
+				print("Erica_FF2")
+				entries_crystal, N_not_ok, itry = check_move_water_hydrogens(entries_crystal, "SPC_Fw")
 			
 			if N_not_ok != 0:
 				print("Warning: structure {: 5d} contains {: 5d} wrong water molecules".format(jsample, N_not_ok))
@@ -150,9 +159,9 @@ if create:
 				print("Structure {: 5d} converged after {: 5d} iterations".format(jsample, itry))
 
 
-			write_output( jsample, entries_crystal, entries_bonds, entries_angle, shape, crystal_rs, water_in_crystal_rs,
+			write_output( jsample, entries_crystal, entries_bonds, entries_bonds_cshff, entries_angle, entries_angle_cshff, shape, crystal_rs, water_in_crystal_rs,
 					 	  supercell, N_Ca, N_Si, r_SiOH, r_CaOH, MCL, write_lammps, write_lammps_erica, write_vasp, write_siesta,
-					 	  prefix)
+					 	  prefix, write_lammps_cshff)
 
 			jsample += 1
 
@@ -180,11 +189,11 @@ if read_structure:
 
 	shape, crystal_rs, water_in_crystal_rs, N_Si, N_Ca, r_SiOH, r_CaOH, MCL = read_brick(shape_read, brick_code, water_code, pieces, surface_from_bulk)
 	
-	entries_crystal, entries_bonds, crystal_dict, water_dict = get_full_coordinates( crystal_rs, water_in_crystal_rs, shape, pieces )
+	entries_crystal, entries_bonds, entries_bonds_cshff, crystal_dict, water_dict = get_full_coordinates( crystal_rs, water_in_crystal_rs, shape, pieces )
 
-	entries_angle = get_angles(crystal_dict, water_dict, shape)
+	entries_angle, entries_angle_cshff = get_angles(crystal_dict, water_dict, shape)
 
-	entries_crystal, N_not_ok, itry = check_move_water_hydrogens(entries_crystal)
+	entries_crystal, N_not_ok, itry = check_move_water_hydrogens(entries_crystal, "SPC")
 
 
 
@@ -205,14 +214,15 @@ if read_structure:
 
 	name = prefix+"_fromManualCode.data"
 	name = os.path.join(path, name)
-	get_lammps_input(name, entries_crystal, entries_bonds, entries_angle, supercell, write_lammps_erica) 
+	# get_lammps_input(name, entries_crystal, entries_bonds, entries_angle, supercell, write_lammps_erica) 
+	get_lammps_cshff(name, entries_crystal, entries_bonds_cshff, entries_angle_cshff, supercell) 
 	name = prefix+"_fromManualCode.log"
 	name = os.path.join(path, name)
 	get_log(name, shape, crystal_rs, water_in_crystal_rs, N_Ca, N_Si, r_SiOH, r_CaOH, MCL )
 
 	name = prefix+"_fromManualCode.vasp"
 	name = os.path.join(path, name)
-	get_vasp_input(name, entries_crystal, supercell)
+	get_vasp_input_Ob(name, entries_crystal, supercell)
 
 	name = prefix+"_fromManualCode.xyz"
 	name = os.path.join(path, name)

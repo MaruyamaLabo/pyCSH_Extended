@@ -1,6 +1,6 @@
 import numpy as np
 import os
-
+from mod_write_cshff import *
 
 
 def get_lammps_input(input_file, entries_crystal, entries_bonds, entries_angle, supercell, write_lammps_erica):
@@ -41,14 +41,14 @@ def get_lammps_input(input_file, entries_crystal, entries_bonds, entries_angle, 
 		CS_info = []
 		for i in entries_crystal:
 			if i[1] == 3:
-				f.write( fmt.format(i[0], molID, *i[1:]) )
+				f.write( fmt.format(i[0], molID, *i[1:6]) )
 				CS_info.append( [i[0], molID] )
 			elif i[1] == 4:
-				f.write( fmt.format(i[0], molID, *i[1:]) )
+				f.write( fmt.format(i[0], molID, *i[1:6]) )
 				CS_info.append( [i[0], molID] )
 				molID += 1
 			else:
-				f.write( fmt.format(i[0], 1, *i[1:]) )
+				f.write( fmt.format(i[0], 1, *i[1:6]) )
 				CS_info.append( [i[0], 1] )
 		f.write( " \n" )
 
@@ -92,7 +92,8 @@ def get_lammps_input_reaxfff(name, entries_crystal, supercell):
 
 	for entry in entries_crystal:
 		specie = entry[1]
-		r = np.array( entry[3:] )
+		
+		r = np.array( entry[3:6] )
 
 		if specie == 1:
 			coords_Ca.append(r)
@@ -187,7 +188,7 @@ def get_vasp_input(name, entries_crystal, supercell):
 
 	for entry in entries_crystal:
 		specie = entry[1]
-		r = np.array( entry[3:] )
+		r = np.array( entry[3:6] )
 
 		if specie == 1:
 			coords_Ca.append(r)
@@ -259,6 +260,139 @@ def get_vasp_input(name, entries_crystal, supercell):
 		for i in coords_H:
 			f.write( fmt.format(*i) )
 
+def get_vasp_input_Ob(name, entries_crystal, supercell):
+    
+	N_atoms_specie = np.zeros(7,dtype=int)
+
+	coords = [ [] for i in range(8) ]
+
+	coords_Ca = []
+	coords_Si = []
+	coords_O1 = []
+	#coords_O2 = []
+	coords_Ow = []
+	coords_Oh = []
+	coords_Hw = []
+	coords_H = []
+	coords_Ob = []
+
+	for entry in entries_crystal:
+		specie = entry[1]
+		r = np.array( entry[3:6] )
+
+		if specie == 1:
+			coords_Ca.append(r)
+			N_atoms_specie[0] += 1
+		elif specie == 2:
+			coords_Si.append(r)
+			N_atoms_specie[1] += 1
+		elif specie == 3: #O
+			if entry[6] in ['!L', '!R'] and entry[9] == "Up-bridging": #[!L,SU or SUo, !R]のとき
+				if entry[6] == '!L' and (entry[8] == 4 or entry[8] == 5): #O13と11 Ob (Si-bridging site O)
+					coords_Ob.append(r)
+					N_atoms_specie[6] += 1
+				elif entry[6] == '!R' and entry[8] == 4: #O25 Ob (Si-bridging site O)
+					coords_Ob.append(r)
+					N_atoms_specie[6] += 1
+				else:
+					coords_O1.append(r)
+					N_atoms_specie[2] += 1
+			elif entry[6] in ['!L', '!Lo'] and entry[9] == "non-bridging": #[!L, !R] or [!Lo, CU, !Ro]のとき
+				if entry[6] == '!L' and entry[8] == 4: #O13 Ob (Si-bridging site O)
+					coords_Ob.append(r)
+					N_atoms_specie[6] += 1
+				elif entry[6] == '!Lo' and entry[8] == 4: #O13 Ob (Si-bridging site O)
+					coords_Ob.append(r)
+					N_atoms_specie[6] += 1
+				else:
+					coords_O1.append(r)
+					N_atoms_specie[2] += 1
+			elif entry[6] in ['@L', '@R'] and entry[9] == "Down-bridging": #[!L,SU or SUo, !R]のとき
+				if entry[6] == '@R' and (entry[8] == 4 or entry[8] == 5): #O14と26 Ob (Si-bridging site O)
+					coords_Ob.append(r)
+					N_atoms_specie[6] += 1
+				elif entry[6] == '@L' and entry[8] == 4: #O12 Ob (Si-bridging site O)
+					coords_Ob.append(r)
+					N_atoms_specie[6] += 1
+				else:
+					coords_O1.append(r)
+					N_atoms_specie[2] += 1
+			elif entry[6] in ['@R', '@Ro'] and entry[9] == "non-bridging": #[!L, !R] or [!Lo, CU, !Ro]のとき
+				if entry[6] == '@R' and entry[8] == 4: #O14 Ob (Si-bridging site O)
+					coords_Ob.append(r)
+					N_atoms_specie[6] += 1
+				elif entry[6] == '@Ro' and entry[8] == 4: #O14 Ob (Si-bridging site O)
+					coords_Ob.append(r)
+					N_atoms_specie[6] += 1
+				else:
+					coords_O1.append(r)
+					N_atoms_specie[2] += 1
+			else:
+				coords_O1.append(r)
+				N_atoms_specie[2] += 1
+		elif specie == 5:
+			coords_Ow.append(r)
+			N_atoms_specie[3] += 1
+		elif specie == 6:
+			coords_O1.append(r)
+			N_atoms_specie[2] += 1
+		# elif specie == 7:
+		# 	coords_Hw.append(r)
+		# 	N_atoms_specie[4] += 1
+		# elif specie == 8:
+		# 	coords_H.append(r)
+		# 	N_atoms_specie[5] += 1
+
+		coords[  entry[1]-1 ].append( r )
+
+
+	together = True
+	if together:
+		coords_O1 = coords_O1 + coords_Ow
+		N_atoms_specie[2] += N_atoms_specie[3]
+		N_atoms_specie[3] = 0
+		coords_Ow = []
+
+		coords_H = coords_H + coords_Hw
+		N_atoms_specie[5] += N_atoms_specie[4]
+		N_atoms_specie[4] = 0
+		coords_Hw = []
+
+	#print(np.sum(N_atoms_specie))
+
+	#f.write( " \n" )
+	with open( name, "w" ) as f:
+		f.write( "kk \n" )
+		f.write( "1.0 \n" )
+		for i in supercell:
+			f.write( "{: 12.6f} {: 12.6f} {: 12.6f} \n".format(*i) )
+		f.write( "Ca  Si  O  Ow  Hw  H  C \n" )
+		f.write( "{: 5d} {: 5d} {: 5d} {: 5d} {: 5d} {: 5d} {: 5d} \n".format(*N_atoms_specie) )
+		f.write("Cartesian\n")
+		fmt = "{: 12.6f} {: 12.6f} {: 12.6f} \n"
+		
+		# for i in range(8):
+		# #for i in [4, 6]:
+		# 	for j in coords[i]:
+		# 		f.write( fmt.format(*j) )
+
+		for i in coords_Ca:
+			f.write( fmt.format(*i) )
+		for i in coords_Si:
+			f.write( fmt.format(*i) )
+		for i in coords_O1:
+			f.write( fmt.format(*i) )
+		for i in coords_Ob:
+			f.write( fmt.format(*i) )
+		for i in coords_Ow:
+			f.write( fmt.format(*i) )
+		for i in coords_Oh:
+			f.write( fmt.format(*i) )
+		for i in coords_Hw:
+			f.write( fmt.format(*i) )
+		for i in coords_H:
+			f.write( fmt.format(*i) )
+
 
 def get_xyz_input(name, entries_crystal, supercell):
 
@@ -277,7 +411,7 @@ def get_xyz_input(name, entries_crystal, supercell):
 
 	for entry in entries_crystal:
 		specie = entry[1]
-		r = np.array( entry[3:] )
+		r = np.array( entry[3:6] )
 
 		if specie == 1:
 			coords_Ca.append(r)
@@ -399,7 +533,7 @@ def get_siesta_input(name, entries_crystal, supercell):
 
 	for entry in entries_crystal:
 		specie = entry[1]
-		r = np.array( entry[3:] )
+		r = np.array( entry[3:6] )
 		#r = apply_PBC(r, cell, cell_inv)
 
 		if specie == 1:
@@ -541,9 +675,9 @@ def get_sorted_log(list_properties):
 
 
 
-def write_output( isample, entries_crystal, entries_bonds, entries_angle, shape, crystal_rs, water_in_crystal_rs,
+def write_output( isample, entries_crystal, entries_bonds, entries_bonds_cshff, entries_angle, entries_angle_cshff, shape, crystal_rs, water_in_crystal_rs,
 				  supercell, N_Ca, N_Si, r_SiOH, r_CaOH, MCL, write_lammps, write_lammps_erica, write_vasp, write_siesta,
-				  prefix):
+				  prefix, write_lammps_cshff):
 
 	mypath = os.path.abspath(".")
 	path = os.path.join(mypath, "output/")
@@ -551,13 +685,17 @@ def write_output( isample, entries_crystal, entries_bonds, entries_angle, shape,
 	if write_lammps or write_lammps_erica:
 		name = prefix+"_"+str(isample+1)+".data"
 		name = os.path.join(path, name)
-		get_lammps_input(name, entries_crystal, entries_bonds, entries_angle, supercell, write_lammps_erica) 
+		get_lammps_input_Erica_umeki(name, entries_crystal, entries_bonds, entries_angle, supercell, write_lammps_erica) 
 	
 	if write_lammps:
 		name = prefix+"_reax"+str(isample+1)+".data"
 		name = os.path.join(path, name)
 		get_lammps_input_reaxfff(name, entries_crystal, supercell)
 
+	if write_lammps_cshff:
+		name = prefix+"_cshff"+str(isample+1)+".data"
+		name = os.path.join(path, name)
+		get_lammps_cshff(name, entries_crystal, entries_bonds_cshff, entries_angle_cshff, supercell)	
 
 	name = prefix+"_"+str(isample+1)+".log"
 	name = os.path.join(path, name)

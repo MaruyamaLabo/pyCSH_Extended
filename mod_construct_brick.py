@@ -1,6 +1,8 @@
 import numpy as np
 import random
 import ast
+from itertools import product, combinations
+from parameters import min_ca, max_ca
 
 class Piece(object):
 	"""docstring for Piece"""
@@ -97,15 +99,15 @@ class Piece(object):
 
 
 
-pieces = { "<L"   : Piece( charge = -2, file = "<L"   ),
-		   ">L"   : Piece( charge = 0,  file = ">L"   ),
-		   "<R"   : Piece( charge = 0,  file = "<R"   ),
-		   ">R"   : Piece( charge = -2, file = ">R"   ),
+pieces = { "!L"   : Piece( charge = -2, file = "!L"   ),
+		   "@L"   : Piece( charge = 0,  file = "@L"   ),
+		   "!R"   : Piece( charge = 0,  file = "!R"   ),
+		   "@R"   : Piece( charge = -2, file = "@R"   ),
                                                              
-		   "<Lo"  : Piece( charge = -1, file = "<Lo"  ),
-		   ">Lo"  : Piece( charge = 1,  file = ">Lo"  ),
-		   "<Ro"  : Piece( charge = 1,  file = "<Ro"  ),
-		   ">Ro"  : Piece( charge = -1, file = ">Ro"  ),
+		   "!Lo"  : Piece( charge = -1, file = "!Lo"  ),
+		   "@Lo"  : Piece( charge = 1,  file = "@Lo"  ),
+		   "!Ro"  : Piece( charge = 1,  file = "!Ro"  ),
+		   "@Ro"  : Piece( charge = -1, file = "@Ro"  ),
                                                              
                                                              
 		   "SU"   : Piece( charge = 0, file =  "SU"  ),
@@ -210,10 +212,10 @@ class Brick(object):
 				self.N_Ca += pieces[p].N_Ca
 				self.N_Oh += pieces[p].N_Oh
 
-			if p in [ "<Lo", "<Ro", ">Lo", ">Ro", "SUo", "SDo" ]:
+			if p in [ "!Lo", "!Ro", "@Lo", "@Ro", "SUo", "SDo" ]:
 				self.N_SiOH += 1
 
-			if p in [ "<Lo", "<Ro", ">Lo", ">Ro", "<L", "<R", ">L", ">R"]:
+			if p in [ "!Lo", "!Ro", "@Lo", "@Ro", "!L", "!R", "@L", "@R"]:
 				self.N_braket += 1
 
 			if p in [ "SU", "SUo", "SD", "SDo" ]:
@@ -236,18 +238,18 @@ def above_layer():
 	for i_bridge in bridging:
 		if i_bridge in [["SU"], ["SUo"]]:
 			for oh_bridge in [ [None], ["oMUL"] ]:
-				comb = ["<L"] + i_bridge + oh_bridge + ["<R"]
+				comb = ["!L"] + i_bridge + oh_bridge + ["!R"]
 				combs_above.append( [x for x in comb if x is not None] )
 
 		if i_bridge == [None]:
-			for i_left in [["<L"], ["<Lo"]]:
-				for i_right in  [["<R"], ["<Ro"]]:
+			for i_left in [["!L"], ["!Lo"]]:
+				for i_right in  [["!R"], ["!Ro"]]:
 					comb = i_left + i_right
 					combs_above.append(comb)
 
 		if i_bridge == ["CU"]:
-			for i_left in [["<L"], ["<Lo"]]:
-				for i_right in  [["<R"], ["<Ro"]]:
+			for i_left in [["!L"], ["!Lo"]]:
+				for i_right in  [["!R"], ["!Ro"]]:
 					for oh_bridge_1 in [ [None], ["oMUL"] ]:
 						for oh_bridge_2 in [ [None], ["oMUR"] ]:
 							comb = i_left + i_bridge + oh_bridge_1 + oh_bridge_2 + i_right
@@ -265,18 +267,18 @@ def below_layer():
 	for i_bridge in bridging:
 		if i_bridge in [["SD"], ["SDo"]]:
 			for oh_bridge in [ [None], ["oMDL"] ]:
-				comb = [">L"] + i_bridge + oh_bridge + [">R"]
+				comb = ["@L"] + i_bridge + oh_bridge + ["@R"]
 				combs_below.append( [x for x in comb if x is not None] )
 
 		if i_bridge == [None]:
-			for i_left in [[">L"], [">Lo"]]:
-				for i_right in  [[">R"], [">Ro"]]:
+			for i_left in [["@L"], ["@Lo"]]:
+				for i_right in  [["@R"], ["@Ro"]]:
 					comb = i_left + i_right
 					combs_below.append(comb)
 
 		if i_bridge == ["CD"]:
-			for i_left in [[">L"], [">Lo"]]:
-				for i_right in  [[">R"], [">Ro"]]:
+			for i_left in [["@L"], ["@Lo"]]:
+				for i_right in  [["@R"], ["@Ro"]]:
 					for oh_bridge_1 in [ [None], ["oMDL"] ]:
 						for oh_bridge_2 in [ [None], ["oMDR"] ]:
 							comb = i_left + i_bridge + oh_bridge_1 + oh_bridge_2 + i_right
@@ -286,51 +288,161 @@ def below_layer():
 	return combs_below
 
 
+# def interlayer(): #Origin
+# 	inter_Ca_1 = [None, "CII"]
+# 	inter_Ca_2 = [None, "XU"]
+# 	inter_Ca_3 = [None, "XD"]
+# 	inter_Ca_4 = [None, "CID"]
+# 	inter_Ca_5 = [None, "CIU"]
+
+# 	inter_OH_1 = [None, "oDL"]
+# 	inter_OH_2 = [None, "oDR"]
+# 	inter_OH_3 = [None, "oUL"]
+# 	inter_OH_4 = [None, "oUR"]
+
+# 	combs_inter = []
+
+# 	for i_Ca_1 in inter_Ca_1:
+# 		for i_Ca_2 in inter_Ca_2:
+# 			for i_Ca_3 in inter_Ca_3:
+# 				for i_Ca_4 in inter_Ca_4:
+# 					for i_Ca_5 in inter_Ca_5:
+
+# 						for i_OH_1 in inter_OH_1:
+# 							for i_OH_2 in inter_OH_2:
+# 								for i_OH_3 in inter_OH_3:
+# 									for i_OH_4 in inter_OH_4:
+
+# 										comb = [i_Ca_1, i_Ca_2, i_Ca_3, i_Ca_4, i_Ca_5,
+# 										        i_OH_1, i_OH_2, i_OH_3, i_OH_4]
+
+
+# 										inter_OH_5 = [None]
+# 										if i_Ca_2 == "XU": inter_OH_5.append("oXU")
+# 										if i_Ca_3 == "XD": inter_OH_5.append("oXD")
+
+# 										# if i_Ca_2 == "XU" or i_Ca_3 == "XD":
+# 										# 	print(inter_OH_5)
+
+# 										for i_OH_5 in inter_OH_5:
+
+# 											comb1 = [i for i in comb]
+# 											comb1.append(i_OH_5)
+# 											comb1 = [x for x in comb1 if x is not None]
+# 											combs_inter.append(comb1)
+
+# 	return combs_inter
 
 def interlayer():
-	inter_Ca_1 = [None, "CII"]
-	inter_Ca_2 = [None, "XU"]
-	inter_Ca_3 = [None, "XD"]
-	inter_Ca_4 = [None, "CID"]
-	inter_Ca_5 = [None, "CIU"]
+    inter_Ca = {
+        "CII": [None, "CII"],
+        "XU": [None, "XU"],
+        "XD": [None, "XD"],
+        "CID": [None, "CID"],
+        "CIU": [None, "CIU"]
+    }
+    
+    inter_OH = {
+        "oDL": [None, "oDL"],
+        "oDR": [None, "oDR"],
+        "oUL": [None, "oUL"],
+        "oUR": [None, "oUR"]
+    }
 
-	inter_OH_1 = [None, "oDL"]
-	inter_OH_2 = [None, "oDR"]
-	inter_OH_3 = [None, "oUL"]
-	inter_OH_4 = [None, "oUR"]
+    combs_inter = []
 
-	combs_inter = []
+    # すべてのカルシウム要素の組み合わせを生成
+    all_ca_combinations = list(product(*inter_Ca.values()))
 
-	for i_Ca_1 in inter_Ca_1:
-		for i_Ca_2 in inter_Ca_2:
-			for i_Ca_3 in inter_Ca_3:
-				for i_Ca_4 in inter_Ca_4:
-					for i_Ca_5 in inter_Ca_5:
+    # カルシウムの数が最小数から最大数の範囲内にある組み合わせのみを選択
+    valid_ca_combinations = [
+        comb for comb in all_ca_combinations
+        if min_ca <= sum(1 for c in comb if c is not None) <= max_ca
+    ]
 
-						for i_OH_1 in inter_OH_1:
-							for i_OH_2 in inter_OH_2:
-								for i_OH_3 in inter_OH_3:
-									for i_OH_4 in inter_OH_4:
+    # OHの組み合わせを生成
+    oh_combinations = list(product(*inter_OH.values()))
 
-										comb = [i_Ca_1, i_Ca_2, i_Ca_3, i_Ca_4, i_Ca_5,
-										        i_OH_1, i_OH_2, i_OH_3, i_OH_4]
+    # カルシウムとOHの組み合わせを生成
+    for ca_comb in valid_ca_combinations:
+        for oh_comb in oh_combinations:
+            comb = list(ca_comb + oh_comb)
+            
+            # XUとXDが存在する場合、oXUとoXDを追加
+            if "XU" in comb:
+                comb.append("oXU")
+            if "XD" in comb:
+                comb.append("oXD")
+            
+            # Noneを除去
+            comb = [x for x in comb if x is not None]
+            combs_inter.append(comb)
 
+    return combs_inter
 
-										inter_OH_5 = [None]
-										if i_Ca_2 == "XU": inter_OH_5.append("oXU")
-										if i_Ca_3 == "XD": inter_OH_5.append("oXD")
+# def interlayer(): #Umeki241014
+	
+# 	inter_Ca = {
+# 		"CII": [None, "CII"],
+# 		"XU": [None, "XU"],
+# 		"XD": [None, "XD"],
+# 		"CID": [None, "CID"],
+# 		"CIU": [None, "CIU"]
+# 	}
+	
+# 	inter_OH = {
+# 		"oDL": [None, "oDL"],
+# 		"oDR": [None, "oDR"],
+# 		"oUL": [None, "oUL"],
+# 		"oUR": [None, "oUR"]
+# 	}
 
-										# if i_Ca_2 == "XU" or i_Ca_3 == "XD":
-										# 	print(inter_OH_5)
+# 	combs_inter = []
 
-										for i_OH_5 in inter_OH_5:
+# 	# Generate all possible combinations of Ca elements
+# 	ca_combinations = []
+# 	for element, (min_count, max_count) in interlayer_control.items():
+# 		ca_combinations.append([c for c in product(inter_Ca[element], repeat=max_count) if c.count(element) >= min_count])
 
-											comb1 = [i for i in comb]
-											comb1.append(i_OH_5)
-											comb1 = [x for x in comb1 if x is not None]
-											combs_inter.append(comb1)
+# 	# Generate all possible combinations of OH elements
+# 	oh_combinations = list(product(*inter_OH.values()))
 
-	return combs_inter
+# 	# # Combine Ca and OH combinations
+# 	# for ca_comb in product(*ca_combinations):
+# 	# 	for oh_comb in oh_combinations:
+# 	# 		comb = list(ca_comb[0] + ca_comb[1] + ca_comb[2] + ca_comb[3] + ca_comb[4] + oh_comb)
+			
+# 	# 		# Add oXU and oXD if XU and XD are present
+# 	# 		if "XU" in comb:
+# 	# 			comb.append("oXU")
+# 	# 		if "XD" in comb:
+# 	# 			comb.append("oXD")
+			
+# 	# 		# Remove None values and add to combs_inter
+# 	# 		comb = [x for x in comb if x is not None]
+# 	# 		combs_inter.append(comb)
+    
+# 	# Combine Ca and OH combinations
+# 	for ca_comb in product(*ca_combinations):
+# 		ca_count = sum(1 for c in ca_comb if c is not None)
+# 		if total_ca_control[0] <= ca_count <= total_ca_control[1]:
+# 			for oh_comb in oh_combinations:
+# 				comb = list(ca_comb + oh_comb)
+				
+# 				# Add oXU and oXD if XU and XD are present
+# 				if "XU" in comb:
+# 					comb.append("oXU")
+# 				if "XD" in comb:
+# 					comb.append("oXD")
+                
+# 	        	# Remove None values and add to combs_inter
+# 				comb = [x for x in comb if x is not None]
+# 				combs_inter.append(comb)
+	
+# 	print("Interlayer control:", interlayer_control)
+# 	print("Inter Ca:", inter_Ca)
+
+# 	return combs_inter
 
 
 
@@ -482,8 +594,8 @@ def read_brick(shape_read, brick_code, water_code, pieces, surface_from_bulk):
 
 		for i in range(shape[0]):
 			for j in range(shape[1]):
-				new_brick_code[(i,j,0)] = ["<Lo", "<Ro"]
-				new_brick_code[(i,j,shape[2]-1)] = [">Lo", ">Ro"]
+				new_brick_code[(i,j,0)] = ["!Lo", "!Ro"]
+				new_brick_code[(i,j,shape[2]-1)] = ["@Lo", "@Ro"]
 
 				new_water_code[(i,j,0)] = []
 				new_water_code[(i,j,shape[2]-1)] = []
