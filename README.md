@@ -80,10 +80,10 @@ Write a `.vasp` VASP data file for each of the structures.
 # フォーク後から加えた拡張
 - brickあたりの層間のCaイオンの数の最大、最小の値をコントロールできるように拡張（最小は０から。最大は５まで。）
 - CSHFF用も対応できるように拡張
-- EricaFFにおいて以下の原子を区別
-  Cab (Ca ion of Non-Interlayer bridging site)
-  Cw (Ca ion of Interlayer)
-  Ohw (Interlayer O of OH)
-  How (Interlayer H of OH)
+- EricaFFにおいて以下の原子を区別  
+  Cab (Ca ion of Non-Interlayer bridging site)  
+  Cw (Ca ion of Interlayer)  
+  Ohw (Interlayer O of OH)  
+  How (Interlayer H of OH)  
 - H2OとOHに分子IDを追加
   
